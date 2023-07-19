@@ -10,8 +10,8 @@ export type TaskType = {
 };
 
 export type ListType = {
-  id: string;
   name: string;
   tasks: TaskType[];
   uid: string;
+  id?: string;
 };

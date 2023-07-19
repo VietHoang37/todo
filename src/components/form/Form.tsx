@@ -1,142 +1,29 @@
-import React, { FormEvent, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import Button from "../button/Button";
 import {
   ButtonsWrapper,
   Container,
   ErrorMessage,
   Heading,
-  IconWrapper,
-  IconsWrapper,
   Input,
-  Item,
   Label,
-  Select,
   TasksWrapper,
-  TextArea,
 } from "./styles";
-import { TaskType, Priority } from "@/types";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
-import Joi from "joi";
-import Modal from "../modal/Modal";
+import { ListType, TaskType } from "@/types";
 import { createList } from "@/pages/api/lists";
+import { listSchema, taskSchema } from "@/schemas/ValidationSchemas";
+import TaskItem from "../taskItem/TaskItem";
+import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 
-const taskSchema = Joi.object({
-  id: Joi.number().required(),
-  name: Joi.string().required(),
-  priority: Joi.string().required(),
-  description: Joi.string().optional().allow(""),
-  deadline: Joi.date().optional().raw().allow("").allow(null),
-  completed: Joi.bool().optional(),
-});
-
-const listSchema = Joi.object({
-  name: Joi.string().required(),
-  tasks: Joi.array().min(1).required(),
-  uid: Joi.string().uuid().required(),
-});
-
-const TaskItem: React.FC<{
-  task: TaskType;
-  onDelete: (id: number) => void;
-  onUpdate: (newTask: TaskType) => void;
-}> = ({ task, onDelete, onUpdate }) => {
-  const [isModal, setIsModal] = useState(false);
-
-  return (
-    <Item key={task.id}>
-      {isModal ? (
-        <TaskModal
-          onClose={() => setIsModal(false)}
-          task={task}
-          onUpdate={onUpdate}
-        />
-      ) : null}
-      <p>{task.name}</p>
-      <IconsWrapper>
-        <IconWrapper>
-          <PencilIcon onClick={() => setIsModal(true)} />
-        </IconWrapper>
-        <IconWrapper onClick={() => onDelete(task.id)}>
-          <TrashIcon color="red" />
-        </IconWrapper>
-      </IconsWrapper>
-    </Item>
-  );
-};
-
-const TaskModal: React.FC<{
+interface Props {
+  uid: string;
   onClose: () => void;
-  task: TaskType;
-  onUpdate: (newTask: TaskType) => void;
-}> = ({ onClose, onUpdate, task }) => {
-  const nameRef = useRef<HTMLInputElement>(null);
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const deadlineRef = useRef<HTMLInputElement>(null);
-  const priorityRef = useRef<HTMLSelectElement>(null);
+  isBack?: boolean;
+  list?: ListType;
+}
 
-  const [validationError, setValidationError] = useState<string>("");
-
-  const saveTask = () => {
-    const updatedTask: TaskType = {
-      id: task.id,
-      priority: (priorityRef.current?.value as Priority) || task.priority,
-      name: nameRef.current?.value || task.name,
-      description: descriptionRef.current?.value,
-      deadline: deadlineRef.current?.value
-        ? new Date(deadlineRef.current.value)
-        : null,
-    };
-
-    const { error } = taskSchema.validate(updatedTask);
-
-    if (error) {
-      setValidationError(error.message);
-      return;
-    }
-
-    onUpdate(updatedTask);
-    setValidationError("");
-    onClose();
-  };
-
-  return (
-    <Modal onClose={onClose}>
-      <Heading>TASK</Heading>
-      <Label>Name</Label>
-      <Input type="text" defaultValue={task.name} ref={nameRef} />
-      <Label>Deadline</Label>
-      <Input
-        type="date"
-        defaultValue={task.deadline?.toISOString().slice(0, 10)}
-        ref={deadlineRef}
-      />
-      <Label>Priority</Label>
-      <Select defaultValue={task.priority} ref={priorityRef}>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </Select>
-      <Label>Description</Label>
-      <TextArea
-        rows={10}
-        defaultValue={task.description || ""}
-        ref={descriptionRef}
-      />
-      {validationError && <ErrorMessage>{validationError}</ErrorMessage>}
-      <ButtonsWrapper>
-        <Button type="button" onClick={saveTask}>
-          Save
-        </Button>
-      </ButtonsWrapper>
-    </Modal>
-  );
-};
-
-const Form: React.FC<{ uid: string; onClose: () => void }> = ({
-  uid,
-  onClose,
-}) => {
-  const [tasks, setTasks] = useState<TaskType[]>([]);
+const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
+  const [tasks, setTasks] = useState<TaskType[]>(list?.tasks || []);
   const [count, setCount] = useState<number>(0);
   const [validationError, setValidationError] = useState<string>("");
 
@@ -179,36 +66,40 @@ const Form: React.FC<{ uid: string; onClose: () => void }> = ({
     }
   };
 
-  const deleteTask = (id: number) => {
+  const deleteTask = (id: number): void => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   };
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const listName = listNameRef.current?.value;
+    try {
+      const listName = listNameRef.current?.value;
 
-    if (!listName) {
-      setValidationError("List name cannot be empty");
-      return;
+      if (!listName) {
+        setValidationError("List name cannot be empty");
+        return;
+      }
+
+      const newList = {
+        name: listName,
+        tasks: tasks,
+        uid: uid,
+      };
+
+      const { error } = listSchema.validate(newList);
+
+      if (error) {
+        setValidationError(error.message);
+        return;
+      }
+
+      createList(newList);
+
+      onClose();
+    } catch (err) {
+      console.log(err);
     }
-
-    const newList = {
-      name: listName,
-      tasks: tasks,
-      uid: uid,
-    };
-
-    const { error } = listSchema.validate(newList);
-
-    if (error) {
-      setValidationError(error.message);
-      return;
-    }
-
-    createList(newList);
-
-    onClose();
   };
 
   const handleKeyDown = (
@@ -220,11 +111,21 @@ const Form: React.FC<{ uid: string; onClose: () => void }> = ({
     }
   };
 
+  const goBack = () => {
+    onClose();
+  };
+
   return (
     <Container onSubmit={handleFormSubmit}>
-      <Heading>Create a list</Heading>
+      {isBack ? (
+        <Button type="button" onClick={goBack}>
+          <ChevronLeftIcon height={20} width={20} />
+          Back
+        </Button>
+      ) : null}
+      {list ? <Heading>Edit a list</Heading> : <Heading>Create a list</Heading>}
       <Label>Name</Label>
-      <Input type="text" ref={listNameRef} />
+      <Input type="text" ref={listNameRef} defaultValue={list?.name} />
       <Label>Tasks</Label>
       <TasksWrapper>
         {tasks.map((task) => (
@@ -248,9 +149,15 @@ const Form: React.FC<{ uid: string; onClose: () => void }> = ({
           Add
         </Button>
       </ButtonsWrapper>
-      <Button type="submit" style={{ width: "100%" }}>
-        Create
-      </Button>
+      {list ? (
+        <Button type="submit" style={{ width: "100%" }}>
+          Edit
+        </Button>
+      ) : (
+        <Button type="submit" style={{ width: "100%" }}>
+          Create
+        </Button>
+      )}
     </Container>
   );
 };

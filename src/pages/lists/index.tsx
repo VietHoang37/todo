@@ -44,13 +44,19 @@ const Lists: React.FC = () => {
   };
 
   const fetchLists = async (uid: string) => {
-    const fetchedLists: ListType[] = await getLists(uid);
-    setLists(fetchedLists);
-    setIsLoading(false);
+    try {
+      const fetchedLists: ListType[] = await getLists(uid);
+      setLists(fetchedLists);
+      setIsLoading(false);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const handleClick = (i: string) => {
-    router.push(`/lists/${i}`);
+  const handleClick = (uid: string, id?: string) => {
+    if (id) {
+      router.push(`/lists/${id}?uid=${uid}`);
+    }
   };
 
   useEffect(() => {
@@ -72,7 +78,13 @@ const Lists: React.FC = () => {
   }
 
   if (isForm || lists.length === 0) {
-    return <Form uid={uid} onClose={() => setIsForm(false)} />;
+    return (
+      <Form
+        uid={uid}
+        onClose={() => setIsForm(false)}
+        isBack={lists.length !== 0}
+      />
+    );
   }
 
   return (
@@ -85,7 +97,7 @@ const Lists: React.FC = () => {
       <ListsWrapper>
         {lists.map((list, i) => (
           <ListWrapper key={i}>
-            <List onClick={() => handleClick(list.id)}>
+            <List onClick={() => handleClick(uid, list.id)}>
               <IconWrapper>
                 <MagnifyingGlassIcon height={40} width={40} color="white" />
               </IconWrapper>
