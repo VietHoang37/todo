@@ -1,4 +1,4 @@
-import { LIGHT_GRAY } from "@/utils/variables";
+import { LIGHT_GRAY, RED } from "@/utils/variables";
 import styled from "styled-components";
 
 export const Container = styled.form`
@@ -32,19 +32,14 @@ export const Item = styled.div`
 export const ButtonsWrapper = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
 `;
 
 export const Heading = styled.h1`
   font-size: 2.4rem;
   margin-bottom: 3rem;
   border-bottom: 2px solid black;
-`;
-
-export const DetailWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
 `;
 
 export const TasksWrapper = styled.div`
@@ -65,5 +60,18 @@ export const IconsWrapper = styled.div`
 
 export const TextArea = styled.textarea`
   width: 100%;
+  margin-bottom: 1rem;
   resize: none;
+  padding: 1rem;
+  font-family: inherit;
+`;
+
+export const ErrorMessage = styled.p`
+  color: ${RED.hex()};
+`;
+
+export const Select = styled.select`
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 1rem;
 `;

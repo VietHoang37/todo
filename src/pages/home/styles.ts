@@ -10,12 +10,11 @@ export const Container = styled.main`
 
 export const Heading = styled.h1`
   text-align: center;
-  font-size: 2.8rem;
+  font-size: 2.4rem;
   margin-bottom: 2rem;
 `;
 
-export const Subheading = styled.p`
+export const Text = styled.p`
   text-align: center;
-  font-size: 1.8rem;
   margin-bottom: 1rem;
 `;

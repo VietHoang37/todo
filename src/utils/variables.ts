@@ -4,6 +4,7 @@ import color from "color";
 export const BLACK = color("#000000");
 export const LIGHT_GRAY = color("#D6DBDC");
 export const WHITE = color("#ffffff");
+export const RED = color("#eb4242");
 
 // shadow-box
 export const LIGHT_SHADOW_BOX = "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px";
