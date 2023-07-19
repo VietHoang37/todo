@@ -24,7 +24,7 @@ interface Props {
 
 const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
   const [tasks, setTasks] = useState<TaskType[]>(list?.tasks || []);
-  const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState<number>(list?.tasks.length || 0);
   const [validationError, setValidationError] = useState<string>("");
 
   const listNameRef = useRef<HTMLInputElement>(null);
@@ -47,6 +47,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
         id: count,
         name: taskName,
         priority: "low",
+        completed: false,
       };
 
       const { error } = taskSchema.validate(newTask);

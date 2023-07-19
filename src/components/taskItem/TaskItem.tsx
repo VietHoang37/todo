@@ -94,6 +94,7 @@ const TaskModal: React.FC<{
       id: task.id,
       priority: (priorityRef.current?.value as Priority) || task.priority,
       name: nameRef.current?.value || task.name,
+      completed: task.completed,
       description: descriptionRef.current?.value,
       deadline: deadlineRef.current?.value
         ? new Date(deadlineRef.current.value)
