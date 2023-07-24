@@ -3,10 +3,10 @@ import Joi from "joi";
 const taskSchema = Joi.object({
   id: Joi.string().optional(),
   name: Joi.string().required(),
-  priority: Joi.string().required(),
+  priority: Joi.string().valid("low", "medium", "high").required(),
   description: Joi.string().optional().allow(""),
   deadline: Joi.date().optional().raw().allow("").allow(null),
-  completed: Joi.bool().optional(),
+  completed: Joi.boolean().required(),
   tempKey: Joi.string().optional(),
 });
 

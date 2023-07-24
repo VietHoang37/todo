@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { joiResolver } from "@hookform/resolvers/joi";
 import Button from "../button/Button";
 import {
   ButtonsWrapper,
   Container,
-  ErrorMessage,
   Heading,
   Input,
   Label,
@@ -11,11 +12,11 @@ import {
 } from "./styles";
 import { ListType, TaskType } from "@/types";
 import { createList, updateList } from "@/api/lists";
-import { listSchema, taskSchema } from "@/schemas/ValidationSchemas";
 import TaskItem from "../taskItem/TaskItem";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { createTasks, deleteTask, updateTask } from "@/api/tasks";
 import { v4 as uuidv4 } from "uuid";
+import { listSchema, taskSchema } from "@/schemas/ValidationSchemas";
 
 interface Props {
   uid: string;
@@ -27,10 +28,16 @@ interface Props {
 const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
   const [tasks, setTasks] = useState<TaskType[]>(list?.tasks || []);
   const [tasksToDelete, setTasksToDelete] = useState<TaskType[]>([]);
-  const [validationError, setValidationError] = useState<string>("");
-
-  const listNameRef = useRef<HTMLInputElement>(null);
-  const taskNameRef = useRef<HTMLInputElement>(null);
+  const [taskName, setTaskName] = useState("");
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: joiResolver(listSchema),
+    defaultValues: { name: list?.name || "", uid },
+  });
 
   const updateLocalTask = (newTask: TaskType): void => {
     setTasks((prevTasks) => {
@@ -41,9 +48,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
     });
   };
 
-  const addTask = (): void => {
-    const taskName = taskNameRef.current?.value.trim();
-
+  const handleAddTask = (): void => {
     if (taskName) {
       const newTask: TaskType = {
         tempKey: uuidv4(),
@@ -55,16 +60,12 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       const { error } = taskSchema.validate(newTask);
 
       if (error) {
-        setValidationError(error.message);
+        console.error(error.message);
         return;
       }
 
       setTasks((prevTasks) => [...prevTasks, newTask]);
-      setValidationError("");
-
-      if (taskNameRef.current) {
-        taskNameRef.current.value = "";
-      }
+      setTaskName("");
     }
   };
 
@@ -89,27 +90,11 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
     });
   };
 
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const listName = listNameRef.current?.value;
-
-    if (!listName) {
-      setValidationError("List name cannot be empty");
-      return;
-    }
-
+  const onSubmit = async (data: any) => {
     const newList = {
-      name: listName,
+      name: data.name,
       uid: uid,
     };
-
-    const { error } = listSchema.validate(newList);
-
-    if (error) {
-      setValidationError(error.message);
-      return;
-    }
 
     if (!list) {
       const createdList = await createList(newList);
@@ -130,6 +115,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
         }
 
         for (const task of tasks) {
+          console.log(tasks);
           if (task.id) {
             await updateTask(updatedList.id, task.id, task);
           } else {
@@ -142,21 +128,12 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
     onClose();
   };
 
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>
-  ): void => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      addTask();
-    }
-  };
-
   const goBack = () => {
     onClose();
   };
 
   return (
-    <Container onSubmit={handleFormSubmit}>
+    <Container onSubmit={handleSubmit(onSubmit)}>
       {isBack ? (
         <Button type="button" onClick={goBack}>
           <ChevronLeftIcon height={20} width={20} />
@@ -165,7 +142,12 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       ) : null}
       {list ? <Heading>Edit a list</Heading> : <Heading>Create a list</Heading>}
       <Label>Name</Label>
-      <Input type="text" ref={listNameRef} defaultValue={list?.name} />
+      <Controller
+        name="name"
+        control={control}
+        render={({ field }) => <Input type="text" {...field} />}
+      />
+      {errors.name && <p>{errors.name.message}</p>}
       <Label>Tasks</Label>
       <TasksWrapper>
         {tasks.map((task) => (
@@ -180,12 +162,17 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       <Input
         type="text"
         placeholder="Name"
-        ref={taskNameRef}
-        onKeyDown={handleKeyDown}
+        value={taskName}
+        onChange={(e) => setTaskName(e.target.value)}
+        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleAddTask();
+          }
+        }}
       />
-      {validationError && <ErrorMessage>{validationError}</ErrorMessage>}
       <ButtonsWrapper>
-        <Button type="button" onClick={addTask}>
+        <Button type="button" onClick={handleAddTask}>
           Add
         </Button>
       </ButtonsWrapper>

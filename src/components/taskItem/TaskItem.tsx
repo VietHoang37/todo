@@ -1,4 +1,4 @@
-import { Priority, TaskType, TaskType } from "@/types";
+import { Priority, TaskType } from "@/types";
 import { useRef, useState } from "react";
 import {
   Checkbox,
@@ -114,6 +114,7 @@ const TaskModal: React.FC<{
   const saveTask = () => {
     const updatedTask: TaskType = {
       tempKey: task.tempKey,
+      id: task.id || undefined,
       priority: (priorityRef.current?.value as Priority) || task.priority,
       name: nameRef.current?.value || task.name,
       completed: task.completed,
