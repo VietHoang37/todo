@@ -75,19 +75,19 @@ const List = () => {
     router.back();
   };
 
-  const removeTask = (taskId: number): void => {
+  const removeTask = (deletedTask: TaskType): void => {
     setList((prevList) => {
       if (!prevList) {
         return prevList;
       }
 
       const updatedTasks = prevList.tasks.filter(
-        (task) => task.id !== String(taskId)
+        (task) => task.id !== String(deletedTask.id)
       );
       return { ...prevList, tasks: updatedTasks };
     });
 
-    deleteTask(id as string, taskId);
+    deleteTask(id as string, deletedTask.id as string);
   };
 
   const updateTask = (newTask: TaskType): void => {
@@ -105,7 +105,7 @@ const List = () => {
 
   useEffect(() => {
     fetchList();
-  }, [id]);
+  }, [id, isEdit]);
 
   if (!uid || !list) {
     return <LoadingWrapper>Loading...</LoadingWrapper>;

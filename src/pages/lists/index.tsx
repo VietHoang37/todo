@@ -15,7 +15,6 @@ import {
 } from "./styles";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/button/Button";
-import { useRouter } from "next/router";
 import Link from "next/link";
 
 const Lists: React.FC = () => {
@@ -23,8 +22,7 @@ const Lists: React.FC = () => {
   const [lists, setLists] = useState<ListType[]>([]);
   const [isForm, setIsForm] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const router = useRouter();
+  const [isFirstForm, setIsFirstForm] = useState<boolean>(true);
 
   const initializeUser = () => {
     const userID = retrieveOrGenerateUserID();
@@ -58,7 +56,7 @@ const Lists: React.FC = () => {
     if (uid) {
       fetchLists(uid);
     }
-  }, [uid, isForm]);
+  }, [uid, isForm, isFirstForm]);
 
   if (!uid) {
     return null;
@@ -72,7 +70,10 @@ const Lists: React.FC = () => {
     return (
       <Form
         uid={uid}
-        onClose={() => setIsForm(false)}
+        onClose={() => {
+          setIsForm(false);
+          setIsFirstForm(false);
+        }}
         isBack={lists.length !== 0}
       />
     );

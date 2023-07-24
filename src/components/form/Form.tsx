@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { joiResolver } from "@hookform/resolvers/joi";
 import Button from "../button/Button";
@@ -29,10 +29,12 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
   const [tasks, setTasks] = useState<TaskType[]>(list?.tasks || []);
   const [tasksToDelete, setTasksToDelete] = useState<TaskType[]>([]);
   const [taskName, setTaskName] = useState("");
+
+  const memoizedTasks = useMemo(() => tasks, [tasks]);
+
   const {
     handleSubmit,
     control,
-    reset,
     formState: { errors },
   } = useForm({
     resolver: joiResolver(listSchema),
@@ -100,7 +102,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       const createdList = await createList(newList);
 
       if (createdList && createdList.id) {
-        await createTasks(createdList.id, tasks);
+        await createTasks(createdList.id, memoizedTasks);
       } else {
         console.error("Failed to create list or list ID is undefined");
       }
@@ -114,8 +116,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
           }
         }
 
-        for (const task of tasks) {
-          console.log(tasks);
+        for (const task of memoizedTasks) {
           if (task.id) {
             await updateTask(updatedList.id, task.id, task);
           } else {
