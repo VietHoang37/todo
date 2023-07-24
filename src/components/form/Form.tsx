@@ -10,10 +10,12 @@ import {
   TasksWrapper,
 } from "./styles";
 import { ListType, TaskType } from "@/types";
-import { createList } from "@/pages/api/lists";
+import { createList, updateList } from "@/api/lists";
 import { listSchema, taskSchema } from "@/schemas/ValidationSchemas";
 import TaskItem from "../taskItem/TaskItem";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { createTasks, deleteTask, updateTask } from "@/api/tasks";
+import { v4 as uuidv4 } from "uuid";
 
 interface Props {
   uid: string;
@@ -24,16 +26,16 @@ interface Props {
 
 const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
   const [tasks, setTasks] = useState<TaskType[]>(list?.tasks || []);
-  const [count, setCount] = useState<number>(list?.tasks.length || 0);
+  const [tasksToDelete, setTasksToDelete] = useState<TaskType[]>([]);
   const [validationError, setValidationError] = useState<string>("");
 
   const listNameRef = useRef<HTMLInputElement>(null);
   const taskNameRef = useRef<HTMLInputElement>(null);
 
-  const updateTask = (newTask: TaskType): void => {
+  const updateLocalTask = (newTask: TaskType): void => {
     setTasks((prevTasks) => {
       const updatedTasks = prevTasks.map((task) =>
-        task.id === newTask.id ? newTask : task
+        task.tempKey === newTask.tempKey ? newTask : task
       );
       return updatedTasks;
     });
@@ -44,7 +46,7 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
 
     if (taskName) {
       const newTask: TaskType = {
-        id: count,
+        tempKey: uuidv4(),
         name: taskName,
         priority: "low",
         completed: false,
@@ -58,7 +60,6 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       }
 
       setTasks((prevTasks) => [...prevTasks, newTask]);
-      setCount((prevCount) => prevCount + 1);
       setValidationError("");
 
       if (taskNameRef.current) {
@@ -67,40 +68,78 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
     }
   };
 
-  const deleteTask = (id: number): void => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+  const deleteLocalTask = (deletedTask: TaskType): void => {
+    setTasks((prevTasks) => {
+      const filteredTasks = prevTasks.filter((task) => {
+        if (list) {
+          return task.id !== deletedTask.id;
+        } else {
+          return task.tempKey !== deletedTask.tempKey;
+        }
+      });
+
+      if (list) {
+        setTasksToDelete((prevTasksToDelete) => [
+          ...prevTasksToDelete,
+          deletedTask,
+        ]);
+      }
+
+      return filteredTasks;
+    });
   };
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    try {
-      const listName = listNameRef.current?.value;
+    const listName = listNameRef.current?.value;
 
-      if (!listName) {
-        setValidationError("List name cannot be empty");
-        return;
-      }
-
-      const newList = {
-        name: listName,
-        tasks: tasks,
-        uid: uid,
-      };
-
-      const { error } = listSchema.validate(newList);
-
-      if (error) {
-        setValidationError(error.message);
-        return;
-      }
-
-      createList(newList);
-
-      onClose();
-    } catch (err) {
-      console.log(err);
+    if (!listName) {
+      setValidationError("List name cannot be empty");
+      return;
     }
+
+    const newList = {
+      name: listName,
+      uid: uid,
+    };
+
+    const { error } = listSchema.validate(newList);
+
+    if (error) {
+      setValidationError(error.message);
+      return;
+    }
+
+    if (!list) {
+      const createdList = await createList(newList);
+
+      if (createdList && createdList.id) {
+        await createTasks(createdList.id, tasks);
+      } else {
+        console.error("Failed to create list or list ID is undefined");
+      }
+    } else if (list.id) {
+      const updatedList = await updateList(list.id, newList.name);
+
+      if (updatedList && updatedList.id) {
+        for (const task of tasksToDelete) {
+          if (task.id) {
+            await deleteTask(updatedList.id, task.id);
+          }
+        }
+
+        for (const task of tasks) {
+          if (task.id) {
+            await updateTask(updatedList.id, task.id, task);
+          } else {
+            await createTasks(updatedList.id, [task]);
+          }
+        }
+      }
+    }
+
+    onClose();
   };
 
   const handleKeyDown = (
@@ -131,10 +170,10 @@ const Form: React.FC<Props> = ({ uid, onClose, isBack = false, list }) => {
       <TasksWrapper>
         {tasks.map((task) => (
           <TaskItem
-            key={task.id}
+            key={task.tempKey}
             task={task}
-            onDelete={deleteTask}
-            onUpdate={updateTask}
+            onDelete={deleteLocalTask}
+            onUpdate={updateLocalTask}
           />
         ))}
       </TasksWrapper>

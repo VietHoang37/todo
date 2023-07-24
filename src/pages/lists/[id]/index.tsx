@@ -1,13 +1,11 @@
 import React, { ChangeEvent, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { getList } from "../../api/lists";
+import { getList } from "../../../api/lists";
 import { ListType, TaskType } from "@/types";
 import { Container, LoadingWrapper } from "../styles";
 import {
   ButtonsWrapper,
   FilterButton,
-  FilterDropdown,
-  FilterWrapper,
   Header,
   Heading,
   IconWrapper,
@@ -26,7 +24,7 @@ import {
 } from "@heroicons/react/24/outline";
 import Button from "@/components/button/Button";
 import TaskItem from "@/components/taskItem/TaskItem";
-import { deleteTask } from "@/pages/api/tasks";
+import { deleteTask, getTasks } from "@/api/tasks";
 import Form from "@/components/form/Form";
 
 const priorityMap = {
@@ -47,13 +45,17 @@ const List = () => {
   const { id, uid } = router.query;
 
   const fetchList = async () => {
-    try {
-      if (id) {
-        const fetchedList = await getList(Number(id));
-        setList(fetchedList);
-      }
-    } catch (err) {
-      console.log(err);
+    if (id) {
+      const fetchedList = await getList(String(id));
+      const fetchedTasks = await getTasks(String(id));
+
+      fetchedTasks.forEach((task) => {
+        if (task.deadline) {
+          task.deadline = new Date(task.deadline);
+        }
+      });
+
+      setList({ ...fetchedList, tasks: fetchedTasks });
     }
   };
 
@@ -79,7 +81,9 @@ const List = () => {
         return prevList;
       }
 
-      const updatedTasks = prevList.tasks.filter((task) => task.id !== taskId);
+      const updatedTasks = prevList.tasks.filter(
+        (task) => task.id !== String(taskId)
+      );
       return { ...prevList, tasks: updatedTasks };
     });
 

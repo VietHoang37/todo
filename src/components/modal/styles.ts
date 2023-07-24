@@ -11,6 +11,7 @@ export const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.4);
+  z-index: 100;
 `;
 
 export const Content = styled.section`

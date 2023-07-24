@@ -1,17 +1,19 @@
 export type Priority = "low" | "medium" | "high";
 
 export type TaskType = {
-  id: number;
+  id?: string;
   name: string;
   priority: Priority;
-  description?: string | undefined | null;
-  deadline?: Date | undefined | null;
-  completed?: boolean | undefined | null;
+  description?: string;
+  deadline?: Date;
+  completed?: boolean;
+  tempKey?: string;
+  listId?: string;
 };
 
 export type ListType = {
   name: string;
-  tasks: TaskType[];
   uid: string;
+  tasks: TaskType[];
   id?: string;
 };

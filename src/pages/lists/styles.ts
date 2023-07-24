@@ -1,3 +1,4 @@
+import { MediaQuery } from "@/hooks/useDeviceType";
 import { BLACK, LIGHT_GRAY, WHITE } from "@/utils/variables";
 import styled from "styled-components";
 
@@ -10,6 +11,10 @@ export const ListsWrapper = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
+
+  @media ${MediaQuery.isMobile} {
+    grid-template-columns: repeat(2, 1fr);
+  }
 `;
 
 export const IconWrapper = styled.div`

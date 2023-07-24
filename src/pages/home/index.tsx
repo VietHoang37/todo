@@ -2,15 +2,9 @@ import Head from "next/head";
 import { Container, Heading, Text } from "./styles";
 import Image from "next/image";
 import Button from "@/components/button/Button";
-import { useRouter } from "next/router";
+import Link from "next/link";
 
 export default function Home() {
-  const router = useRouter();
-
-  const handleClick = () => {
-    router.push("/lists");
-  };
-
   return (
     <>
       <Head>
@@ -35,9 +29,9 @@ export default function Home() {
           width={800}
           height={600}
         />
-        <Button type="button" onClick={handleClick}>
-          Welcome!
-        </Button>
+        <Link href="/lists" passHref>
+          <Button type="button">Welcome!</Button>
+        </Link>
       </Container>
     </>
   );

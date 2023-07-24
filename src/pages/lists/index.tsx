@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ListType } from "@/types";
-import { getLists } from "../api/lists";
+import { getLists } from "../../api/lists";
 import Form from "@/components/form/Form";
 import {
   Container,
@@ -16,6 +16,7 @@ import {
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/button/Button";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 const Lists: React.FC = () => {
   const [uid, setUid] = useState<string | null>(null);
@@ -44,19 +45,9 @@ const Lists: React.FC = () => {
   };
 
   const fetchLists = async (uid: string) => {
-    try {
-      const fetchedLists: ListType[] = await getLists(uid);
-      setLists(fetchedLists);
-      setIsLoading(false);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const handleClick = (uid: string, id?: string) => {
-    if (id) {
-      router.push(`/lists/${id}?uid=${uid}`);
-    }
+    const fetchedLists: ListType[] = await getLists(uid);
+    setLists(fetchedLists);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -96,14 +87,16 @@ const Lists: React.FC = () => {
       </Header>
       <ListsWrapper>
         {lists.map((list, i) => (
-          <ListWrapper key={i}>
-            <List onClick={() => handleClick(uid, list.id)}>
-              <IconWrapper>
-                <MagnifyingGlassIcon height={40} width={40} color="white" />
-              </IconWrapper>
-            </List>
-            <ListName>{list.name}</ListName>
-          </ListWrapper>
+          <Link key={i} href={`/lists/${list.id}?uid=${uid}`} passHref>
+            <ListWrapper>
+              <List>
+                <IconWrapper>
+                  <MagnifyingGlassIcon height={40} width={40} color="white" />
+                </IconWrapper>
+              </List>
+              <ListName>{list.name}</ListName>
+            </ListWrapper>
+          </Link>
         ))}
       </ListsWrapper>
     </Container>

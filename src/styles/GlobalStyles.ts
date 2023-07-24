@@ -37,5 +37,10 @@ export const GlobalStyles = createGlobalStyle`
     h2 {
       font-weight: 400;
     }
+
+    a {
+      text-decoration: none;
+      color: ${BLACK.hex()};
+    }
   }
 `;

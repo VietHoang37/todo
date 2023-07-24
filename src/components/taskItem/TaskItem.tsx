@@ -1,4 +1,4 @@
-import { Priority, TaskType } from "@/types";
+import { Priority, TaskType, TaskType } from "@/types";
 import { useRef, useState } from "react";
 import {
   Checkbox,
@@ -7,7 +7,7 @@ import {
   IconWrapper,
   TaskName,
 } from "./styles";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button from "../button/Button";
 import Modal from "../modal/Modal";
 import { taskSchema } from "@/schemas/ValidationSchemas";
@@ -20,11 +20,12 @@ import {
   Select,
   TextArea,
 } from "../form/styles";
-import { formattedDate, getPriorityIcon } from "@/utils/helpers";
+import { getPriorityIcon } from "@/utils/helpers";
+import { completeTask } from "@/api/tasks";
 
 interface Props {
   task: TaskType;
-  onDelete: (id: number) => void;
+  onDelete: (task: TaskType) => void;
   onUpdate: (newTask: TaskType) => void;
   isCheckbox?: boolean;
   isTrash?: boolean;
@@ -38,14 +39,26 @@ const TaskItem: React.FC<Props> = ({
   isTrash = true,
 }) => {
   const [isModal, setIsModal] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
 
-  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      console.log("Checkbox is checked.");
+  const handleCheckboxChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newCheckedState = event.target.checked;
+
+    if (!task.listId || !task.id) {
+      console.error("Task does not have a listId or taskId.");
+      return;
     }
 
-    setIsChecked(event.target.checked);
+    const updatedTask = await completeTask(
+      task.listId,
+      task.id,
+      newCheckedState
+    );
+
+    if (updatedTask) {
+      onUpdate(updatedTask);
+    }
   };
 
   return (
@@ -55,20 +68,28 @@ const TaskItem: React.FC<Props> = ({
           onClose={() => setIsModal(false)}
           task={task}
           onUpdate={onUpdate}
+          isEditable={isTrash}
         />
       ) : null}
       {isCheckbox ? (
-        <Checkbox type="checkbox" onChange={handleCheckboxChange} />
+        <Checkbox
+          type="checkbox"
+          onChange={handleCheckboxChange}
+          checked={task.completed}
+        />
       ) : null}
-      <TaskName isChecked={isChecked}>{task.name}</TaskName>
-      {task.deadline ? <p>{formattedDate(task.deadline)}</p> : null}
+      <TaskName isChecked={task.completed}>{task.name}</TaskName>
       <div>{getPriorityIcon(task.priority)}</div>
       <IconsWrapper>
         <IconWrapper>
-          <PencilIcon onClick={() => setIsModal(true)} />
+          {isTrash ? (
+            <PencilIcon onClick={() => setIsModal(true)} />
+          ) : (
+            <EyeIcon onClick={() => setIsModal(true)} />
+          )}
         </IconWrapper>
         {isTrash ? (
-          <IconWrapper onClick={() => onDelete(task.id)}>
+          <IconWrapper onClick={() => onDelete(task)}>
             <TrashIcon color="red" />
           </IconWrapper>
         ) : null}
@@ -81,7 +102,8 @@ const TaskModal: React.FC<{
   onClose: () => void;
   task: TaskType;
   onUpdate: (newTask: TaskType) => void;
-}> = ({ onClose, onUpdate, task }) => {
+  isEditable?: boolean;
+}> = ({ onClose, onUpdate, task, isEditable = true }) => {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const deadlineRef = useRef<HTMLInputElement>(null);
@@ -91,14 +113,14 @@ const TaskModal: React.FC<{
 
   const saveTask = () => {
     const updatedTask: TaskType = {
-      id: task.id,
+      tempKey: task.tempKey,
       priority: (priorityRef.current?.value as Priority) || task.priority,
       name: nameRef.current?.value || task.name,
       completed: task.completed,
       description: descriptionRef.current?.value,
       deadline: deadlineRef.current?.value
         ? new Date(deadlineRef.current.value)
-        : null,
+        : undefined,
     };
 
     const { error } = taskSchema.validate(updatedTask);
@@ -117,15 +139,25 @@ const TaskModal: React.FC<{
     <Modal onClose={onClose}>
       <Heading>TASK</Heading>
       <Label>Name</Label>
-      <Input type="text" defaultValue={task.name} ref={nameRef} />
+      <Input
+        type="text"
+        defaultValue={task.name}
+        ref={nameRef}
+        disabled={!isEditable}
+      />
       <Label>Deadline</Label>
       <Input
         type="date"
         defaultValue={task.deadline?.toISOString().slice(0, 10)}
         ref={deadlineRef}
+        disabled={!isEditable}
       />
       <Label>Priority</Label>
-      <Select defaultValue={task.priority} ref={priorityRef}>
+      <Select
+        defaultValue={task.priority}
+        ref={priorityRef}
+        disabled={!isEditable}
+      >
         <option value="low">Low</option>
         <option value="medium">Medium</option>
         <option value="high">High</option>
@@ -135,13 +167,16 @@ const TaskModal: React.FC<{
         rows={10}
         defaultValue={task.description || ""}
         ref={descriptionRef}
+        disabled={!isEditable}
       />
       {validationError && <ErrorMessage>{validationError}</ErrorMessage>}
-      <ButtonsWrapper>
-        <Button type="button" onClick={saveTask}>
-          Save
-        </Button>
-      </ButtonsWrapper>
+      {isEditable ? (
+        <ButtonsWrapper>
+          <Button type="button" onClick={saveTask}>
+            Save
+          </Button>
+        </ButtonsWrapper>
+      ) : null}
     </Modal>
   );
 };
