@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { Container, Heading, Text } from "./styles";
+import { Container, Heading, Text } from "../../styles/Home.Styled";
 import Image from "next/image";
 import Button from "@/components/button/Button";
 import Link from "next/link";

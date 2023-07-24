@@ -12,7 +12,7 @@ import {
   ListWrapper,
   ListsWrapper,
   LoadingWrapper,
-} from "./styles";
+} from "../../styles/Lists.Styled";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/button/Button";
 import Link from "next/link";

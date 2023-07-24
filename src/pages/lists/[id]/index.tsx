@@ -2,7 +2,7 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getList } from "../../../api/lists";
 import { ListType, TaskType } from "@/types";
-import { Container, LoadingWrapper } from "../styles";
+import { Container, LoadingWrapper } from "../../../styles/Lists.Styled";
 import {
   ButtonsWrapper,
   FilterButton,
@@ -16,7 +16,7 @@ import {
   SelectWrapper,
   Tasks,
   Wrapper,
-} from "./styles";
+} from "../../../styles/List.Styled";
 import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
